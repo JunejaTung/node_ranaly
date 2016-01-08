@@ -1,13 +1,13 @@
 {
-  "name": "node_ranaly",
-  "version": "0.1.1",
+  "name": "tung_ranaly",
+  "version": "0.1.7",
   "description": "Ranaly client library",
   "keywords": ["ranaly"],
-  "author": "Zihua Li <i@zihua.li> (http://zihua.li)",
+  "author": "Juneja",
   "main": "./index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/luin/node_ranaly.git"
+    "url": "https://github.com/JunejaTung/node_ranaly.git"
   },
   "scripts": {
     "test": "make test"

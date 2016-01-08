@@ -1,6 +1,12 @@
 # Ranaly - a node.js ranaly client
 [![Build Status](https://travis-ci.org/luin/node_ranaly.png?branch=master)](https://travis-ci.org/luin/node_ranaly)
 
+该版本是在luin/node_ranaly基础上增加了如下小特性：     
+1、Amount时间戳支持分钟级；   
+2、提供减法计数接口；   
+3、支持带时间戳的总值数据采集。    
+
+
 Ranaly可以非常简单地统计项目中的各种数据，本项目是ranaly的node.js客户端。想要了解更多关于ranaly的介绍请访问[ranaly项目主页](https://github.com/luin/ranaly)。
 
 ## 安装
