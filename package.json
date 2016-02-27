@@ -1,13 +1,13 @@
 {
   "name": "tung_ranaly",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Ranaly client library",
   "keywords": ["ranaly"],
   "author": "Juneja",
   "main": "./index.js",
   "repository": {
     "type": "git",
-    "url": "https://github.com/JunejaTung/node_ranaly.git"
+    "url": "https://github.com/JunejaTung/tung_ranaly.git"
   },
   "scripts": {
     "test": "make test"

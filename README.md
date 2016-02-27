@@ -11,12 +11,12 @@ Ranaly可以非常简单地统计项目中的各种数据，本项目是ranaly�
 
 ## 安装
 
-	npm install node_ranaly
+	npm install tung_ranaly
 
 ## 使用方法
 首先加载ranaly库：
 	
-	var ranaly = require('node_ranaly');
+	var ranaly = require('tung_ranaly');
 
 而后创建ranaly连接：
 

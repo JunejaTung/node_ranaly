@@ -3,19 +3,11 @@ var moment = require('moment');
 var ZMINSCORE = ' \
 local result = {} \
 local length = #ARGV \
-  for i = 2, length-1 do \
-    if i == 2 then \
-      local sctmp = redis.call("zscore", KEYS[1],ARGV[2]) \
-      if not sctmp then \
-        sctmp = 0 \
-      else \
-        sctmp = tonumber(sctmp) \
-      end \
-      result[1] = sctmp \
-    end  \
+local step   = ARGV[1] \
+  for i = 2, length, step do \
     local score = 0 \
-    for j =1 ,ARGV[1] do \
-      local sctmp = redis.call("zscore", KEYS[1],ARGV[i]+j) \
+    for j = 0, step-1 do \
+      local sctmp = redis.call("zscore", KEYS[1], ARGV[i+j]) \
       if not sctmp then \
         sctmp = 0 \
       else \
@@ -23,7 +15,7 @@ local length = #ARGV \
       end \
       score = score + sctmp \
     end \
-    result[i] = score \
+    result[(i-2)/step+1] = score \
   end \
   return result \
 ';
@@ -88,6 +80,26 @@ else \
 end \
 return score \
 ';
+var ZMINSUMSCORE = ' \
+local sum = 0 \
+local length = #ARGV \
+local step   = ARGV[1] \
+  for i = 2, length, step do \
+    local score = 0 \
+    for j = 0, step-1 do \
+      local sctmp = redis.call("zscore", KEYS[1], ARGV[i+j]) \
+      if not sctmp then \
+        sctmp = 0 \
+      else \
+        sctmp = tonumber(sctmp) \
+      end \
+      score = score + sctmp \
+    end \
+    sum = sum + score \
+  end \
+  return sum \
+';
+
 module.exports = function (ranaly) {
   var db = ranaly.redisClient;
 
@@ -149,9 +161,10 @@ module.exports = function (ranaly) {
     };
 
     if (timeList[1].length == 12 ) {
-      var num = timeList[1].substring(10)-timeList[0].substring(10);
-      num = (num < 0) ? num+60 : num;
-      db['eval'].apply(db, [ZMINSCORE].concat(1).concat(this.mkey).concat(num).concat(timeList).concat(next));
+      var step = timeList[1].substring(10)-timeList[0].substring(10);
+      step = (step < 0) ? step + 60 : step;
+      var spreadList = this._spreadTimeList(timeList, step);
+      db['eval'].apply(db, [ZMINSCORE].concat(1).concat(this.mkey).concat(step).concat(spreadList).concat(next));
     }else{
       db['eval'].apply(db, [ZMSCORE].concat(1).concat(this.key).concat(timeList).concat(next));
     }
@@ -161,9 +174,17 @@ module.exports = function (ranaly) {
     var next = function (err, result) {
       callback(err, result);
     };
+
     var tl = [ZSUMSCORE].concat(1).concat(this.key);
     if (Array.isArray(timeList) && timeList.length > 0) {
-      tl = tl.concat(timeList).concat(next);
+      if (timeList[1].length == 12) {
+        var num = timeList[1].substring(10)-timeList[0].substring(10);
+        num = (num < 0) ? num+60 : num;
+        var spreadList = this._spreadTimeList(timeList, num);
+        tl = [ZMINSUMSCORE].concat(1).concat(this.mkey).concat(num).concat(spreadList).concat(next);
+      } else {
+        tl = tl.concat(timeList).concat(next);
+      }
     } else {
       tl = tl.concat(next);
     }
@@ -210,10 +231,11 @@ module.exports = function (ranaly) {
 
     switch (slen) {
       case 12: {
-        var num = timeList[1].substring(10)-timeList[0].substring(10);
+        var step = timeList[1].substring(10)-timeList[0].substring(10);
+        step = (step < 0) ? step + 60 : step;
+        var spreadList = this._spreadTimeList(timeList, step);
 
-        num = (num < 0) ? num+60 : num;
-        db['eval'].apply(db, [ZMINSCORE].concat(1).concat(this.mkey + ':GROSS').concat(num).concat(timeList).concat(next));
+        db['eval'].apply(db, [ZMINSCORE].concat(1).concat(this.mkey + ':GROSS').concat(step).concat(spreadList).concat(next));
         break;
       }
       case 10: {
@@ -236,6 +258,36 @@ module.exports = function (ranaly) {
         console.error('[RANALY]Invalid timestamps: ' + timeList[0]);
       }
     }
+  };
+
+  /**
+   * 分钟级别时间戳数组展开：
+   * 每时间点按步长step向前展开成一分钟步长的数组
+   * 注意：1、timeList时间戳为分钟级别
+   *      2、timeList元素前后时间点的步长固定相等为step
+   * */
+  Amount.prototype._spreadTimeList = function (timeList, step) {
+    var len  = timeList.length;
+
+    if (1 == step) {
+      return timeList;
+    }
+
+    var newList = [];
+    var tmpwhen = '';
+    var s = 0;
+    for (var i = 0; i < len; i++) {
+      tmpwhen = moment(timeList[i], 'YYYYMMDDHHmm');
+
+      var tmpspd  = [];
+      tmpspd[step-1] = timeList[i];
+      for (s = step-2; s >= 0; s--) {
+        tmpspd[s] = tmpwhen.subtract(1, 'minutes').format('YYYYMMDDHHmm');
+      }
+      newList[i] = tmpspd;
+    }
+
+    return newList;
   };
 
   return Amount;
